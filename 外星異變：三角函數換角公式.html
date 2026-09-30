@@ -1,0 +1,1166 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外星異變：三角函數換角公式試煉</title>
+    <style>
+        :root {
+            --color-bg: #0d0d0d;
+            --color-dark-grey: #262626;
+            --color-grey: #595959;
+            --color-red: #ff3333;
+            --color-yellow: #ffcc00;
+            --color-neon-orange: #ff6600;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--color-bg);
+            color: #ffffff;
+        }
+
+        /* 背景 Canvas */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 遊戲核心容器 */
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 面板基底 */
+        .panel {
+            background: rgba(20, 20, 20, 0.85);
+            border: 3px solid var(--color-grey);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 51, 51, 0.2);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* 音量控制區 (右上角) */
+        .audio-control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(38, 38, 38, 0.8);
+            border: 1px solid var(--color-red);
+            padding: 10px 15px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.3);
+        }
+
+        .audio-control-panel label {
+            font-size: 12px;
+            color: var(--color-yellow);
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .audio-control-panel input[type="range"] {
+            -webkit-appearance: none;
+            width: 100px;
+            background: var(--color-grey);
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .audio-control-panel input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-red);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--color-red);
+        }
+
+        /* 封面獨特樣式：增加豐富度與趣味外星感 */
+        .cover-title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--color-yellow);
+            text-shadow: 0 0 10px var(--color-yellow), 3px 3px 0px var(--color-red);
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            animation: glitchText 3s infinite alternate;
+        }
+
+        .cover-subtitle {
+            font-size: 1.1rem;
+            color: #b3b3b3;
+            margin-bottom: 35px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        /* 外星趣味裝飾 */
+        .alien-hud {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            border-top: 1px dashed var(--color-grey);
+            border-bottom: 1px dashed var(--color-grey);
+            padding: 15px 0;
+            background: rgba(255, 204, 0, 0.03);
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 10px;
+            color: var(--color-grey);
+            margin-bottom: 4px;
+        }
+
+        .hud-value {
+            font-size: 14px;
+            color: var(--color-red);
+            font-family: monospace;
+            font-weight: bold;
+            text-shadow: 0 0 5px var(--color-red);
+        }
+
+        /* 難度選擇區：趣味收音機切換鈕造型 */
+        .difficulty-scanner {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--color-dark-grey);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .scanner-title {
+            font-size: 13px;
+            color: #ffffff;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .difficulty-options {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .diff-btn {
+            background: #1a1a1a;
+            border: 2px solid var(--color-grey);
+            color: var(--color-grey);
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .diff-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+
+        .diff-btn:hover::before {
+            left: 100%;
+        }
+
+        .diff-btn.selected[data-diff="easy"] {
+            border-color: var(--color-yellow);
+            color: var(--color-bg);
+            background: var(--color-yellow);
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.6);
+        }
+
+        .diff-btn.selected[data-diff="hard"] {
+            border-color: var(--color-red);
+            color: #ffffff;
+            background: var(--color-red);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.6);
+        }
+
+        /* 主按鈕 */
+        .btn-launch {
+            background: transparent;
+            border: 3px solid var(--color-yellow);
+            color: var(--color-yellow);
+            padding: 15px 50px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
+            transition: all 0.3s;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .btn-launch:hover {
+            background: var(--color-yellow);
+            color: var(--color-bg);
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.8);
+            transform: scale(1.05);
+        }
+
+        /* 遊戲畫面 HUD */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--color-dark-grey);
+        }
+
+        .quiz-info-block {
+            text-align: left;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: var(--color-grey);
+            text-transform: uppercase;
+        }
+
+        .info-val {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: monospace;
+            color: var(--color-yellow);
+        }
+
+        .streak-counter {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--color-red);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--color-red);
+            font-weight: bold;
+        }
+
+        .question-box {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 35px;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(255,255,255,0.2);
+            min-height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .option-btn {
+            background: rgba(38, 38, 38, 0.6);
+            border: 2px solid var(--color-grey);
+            color: #e0e0e0;
+            padding: 18px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .option-btn:hover {
+            border-color: var(--color-yellow);
+            color: var(--color-yellow);
+            background: rgba(255, 204, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* 答題反饋鎖定狀態 */
+        .option-btn.correct {
+            background: rgba(255, 204, 0, 0.3) !important;
+            border-color: var(--color-yellow) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+        }
+
+        .option-btn.wrong {
+            background: rgba(255, 51, 51, 0.3) !important;
+            border-color: var(--color-red) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+        }
+
+        /* 結算報告畫面 */
+        .score-display {
+            font-size: 5rem;
+            font-weight: 900;
+            font-family: monospace;
+            color: var(--color-red);
+            text-shadow: 0 0 20px rgba(255, 51, 51, 0.6);
+            margin: 20px 0;
+        }
+
+        .slogan-box {
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: #e0e0e0;
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--color-dark-grey);
+        }
+
+        /* 🌟 100分終極奢華超維度面板特效 */
+        .panel.perfect-luxury {
+            border-color: var(--color-yellow) !important;
+            box-shadow: 0 0 60px rgba(255, 204, 0, 0.8), inset 0 0 30px rgba(255, 204, 0, 0.3) !important;
+            animation: ultraPulse 2s infinite alternate ease-in-out;
+            background: radial-gradient(circle at center, rgba(35, 30, 10, 0.95) 0%, rgba(15, 15, 15, 0.95) 100%) !important;
+        }
+
+        .perfect-luxury .score-display {
+            color: var(--color-yellow) !important;
+            text-shadow: 0 0 30px var(--color-yellow), 0 0 60px var(--color-neon-orange);
+            animation: scoreScale 1s infinite alternate ease-in-out;
+        }
+
+        .perfect-luxury .slogan-box {
+            border: 2px solid var(--color-yellow) !important;
+            background: rgba(255, 204, 0, 0.08) !important;
+            box-shadow: 0 0 25px rgba(255, 204, 0, 0.2);
+        }
+
+        .perfect-title-addon {
+            font-size: 1.6rem;
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--color-yellow);
+            margin-bottom: 10px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+
+        /* 🚀 火箭核心特效：全螢幕置頂、穿透、動態發射 */
+        #rocketTheater {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none; /* 完全穿透，不干涉底下任何點擊 */
+            display: none;
+        }
+
+        .rocket-container {
+            position: absolute;
+            bottom: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 140px;
+        }
+
+        /* 火箭點火升空動畫 */
+        @keyframes rocketLaunch {
+            0% {
+                bottom: -150px;
+                transform: translateX(-50%) scale(0.9);
+            }
+            15% {
+                bottom: 20px;
+                transform: translateX(-50%) scale(1.1);
+            }
+            25% {
+                bottom: 10px;
+                transform: translateX(-50%) scale(1);
+            }
+            100% {
+                bottom: 110%;
+                transform: translateX(-50%) scale(1.2);
+            }
+        }
+
+        .rocket-active {
+            animation: rocketLaunch 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* 噴火尾跡粒子 */
+        .rocket-fire {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 45px;
+            background: linear-gradient(to bottom, var(--color-yellow), var(--color-red), transparent);
+            border-radius: 50%;
+            filter: blur(2px);
+            animation: flameFlicker 0.1s infinite alternate;
+        }
+
+        /* 動畫 Keyframes */
+        @keyframes glitchText {
+            0% { text-shadow: 2px 2px 0px var(--color-red), -2px -2px 0px var(--color-yellow); }
+            100% { text-shadow: -2px 2px 0px var(--color-red), 2px -2px 0px var(--color-yellow); }
+        }
+
+        @keyframes flameFlicker {
+            0% { height: 40px; opacity: 0.8; }
+            100% { height: 55px; opacity: 1; filter: blur(1px); }
+        }
+
+        @keyframes ultraPulse {
+            0% { border-color: var(--color-yellow); box-shadow: 0 0 40px rgba(255, 204, 0, 0.6); }
+            100% { border-color: var(--color-neon-orange); box-shadow: 0 0 70px rgba(255, 102, 0, 0.9); }
+        }
+
+        @keyframes scoreScale {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
+        }
+/* ==========================================
+           手機版（RWD）自動偵測優化
+        ========================================== */
+        @media (max-width: 500px) {
+            .game-container {
+                padding: 10px; /* 手機外圍縮小留白 */
+            }
+            
+            .panel {
+                padding: 25px 15px; /* 縮小面板內距，爭取內容空間 */
+                border-width: 2px;
+            }
+
+            .cover-title {
+                font-size: 9.5vw; /* 讓長單字隨手機螢幕寬度自動等比例縮放 */
+                letter-spacing: 1px;
+                margin-bottom: 10px;
+            }
+
+            .cover-subtitle {
+                font-size: 1rem;
+                letter-spacing: 2px;
+                margin-bottom: 25px;
+            }
+
+            .audio-control-panel {
+                top: 10px;
+                right: 10px;
+                padding: 6px 12px;
+            }
+            
+            .audio-control-panel input[type="range"] {
+                width: 60px; /* 縮短手機版的音量條以免擋到標題 */
+            }
+
+            .difficulty-options {
+                flex-direction: column; /* 讓兩個難度按鈕在手機上變成上下堆疊 */
+                gap: 12px;
+            }
+
+            .diff-btn {
+                padding: 10px 20px;
+                font-size: 1rem;
+                width: 100%; /* 按鈕撐滿 */
+            }
+
+            .btn-launch {
+                padding: 12px 40px;
+                font-size: 1.2rem;
+                width: 100%; /* 開始按鈕撐滿手機畫面，更好點擊 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 灰黑線條動態交錯 Canvas -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- 音量主控區 -->
+    <div class="audio-control-panel">
+        <label id="bgmStatusLabel">BGM 載入中</label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.4">
+    </div>
+
+    <!-- 穿透式火箭特效劇場 -->
+    <div id="rocketTheater">
+        <div class="rocket-container" id="rocketPod">
+            <!-- 使用純 SVG 繪製精緻外星風紅黃灰火箭 -->
+            <svg viewBox="0 0 64 120" width="100%" height="100%">
+                <!-- 火箭雙翼 -->
+                <path d="M 12 80 L 2 105 L 16 100 Z" fill="#ff3333" />
+                <path d="M 52 80 L 62 105 L 48 100 Z" fill="#ff3333" />
+                <!-- 副推進器 -->
+                <rect x="14" y="85" width="6" height="15" rx="3" fill="#595959" />
+                <rect x="44" y="85" width="6" height="15" rx="3" fill="#595959" />
+                <!-- 火箭主船體 -->
+                <path d="M 32 10 C 45 40 48 70 48 95 L 16 95 C 16 70 19 40 32 10 Z" fill="#262626" stroke="#595959" stroke-width="2" />
+                <!-- 飾條與主甲蓋 -->
+                <path d="M 32 10 C 38 35 40 55 40 70 L 24 70 C 24 55 26 35 32 10 Z" fill="#595959" />
+                <!-- 核心能源舷窗 (亮黃光暈) -->
+                <circle cx="32" cy="45" r="8" fill="#ffcc00" stroke="#ff3333" stroke-width="2" />
+                <circle cx="32" cy="45" r="4" fill="#ffffff" />
+                <!-- 尾部噴嘴 -->
+                <rect x="25" y="95" width="14" height="8" fill="#1a1a1a" />
+            </svg>
+            <!-- 動態噴火層 -->
+            <div class="rocket-fire"></div>
+        </div>
+    </div>
+
+    <div class="game-container">
+
+        <!-- 1. 封面展示面板 -->
+        <div class="panel active" id="panelCover">
+            <h1 class="cover-title">TRIGONOMETRIC</h1>
+            <div class="cover-subtitle">外星波段換角試煉</div>
+            
+            <!-- 趣味外星HUD數據顯示面版 -->
+            <div class="alien-hud">
+                <div class="hud-item">
+                    <span class="hud-label">MATRIX STATUS</span>
+                    <span class="hud-value">MUTATED</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">WAVE VECTOR</span>
+                    <span class="hud-value">θ &rarr; f(θ)</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">ENERGY CORE</span>
+                    <span class="hud-value" id="hudEnergy">99.8%</span>
+                </div>
+            </div>
+
+            <!-- 趣味化難度掃描儀 -->
+            <div class="difficulty-scanner">
+                <div class="scanner-title">選擇波段異變強度 (難易度)</div>
+                <div class="difficulty-options">
+                    <button class="diff-btn selected" data-diff="easy">一般 (Normal)</button>
+                    <button class="diff-btn" data-diff="hard">進階 (Advanced)</button>
+                </div>
+            </div>
+
+            <button class="btn-launch" id="btnStartGame">同步共振開始</button>
+        </div>
+
+        <!-- 2. 核心答題面板 -->
+        <div class="panel" id="panelQuiz">
+            <div class="quiz-header">
+                <div class="quiz-info-block">
+                    <div class="info-label">NODE SCAN</div>
+                    <div class="info-val" id="textProgress">1 / 5</div>
+                </div>
+                <div class="streak-counter" id="textStreak" style="visibility: hidden;">
+                    連擊 COMBO x1
+                </div>
+                <div class="quiz-info-block" style="text-align: right;">
+                    <div class="info-label">COGNITION</div>
+                    <div class="info-val" id="textCurrentScore">0</div>
+                </div>
+            </div>
+
+            <!-- 題目 -->
+            <div class="question-box" id="textQuestion">
+                sin(π + θ) = ?
+            </div>
+
+            <!-- 四選一按鈕 -->
+            <div class="options-grid">
+                <button class="option-btn" data-idx="0">-</button>
+                <button class="option-btn" data-idx="1">-</button>
+                <button class="option-btn" data-idx="2">-</button>
+                <button class="option-btn" data-idx="3">-</button>
+            </div>
+        </div>
+
+        <!-- 3. 結算報告面板 -->
+        <div class="panel" id="panelResult">
+            <div id="perfectHeader"></div>
+            <h2 id="resultTitle" style="letter-spacing: 2px; color: #b3b3b3;">試煉終端評定</h2>
+            <div class="score-display" id="textFinalScore">0</div>
+            <div class="slogan-box" id="textSlogan">評語載入中...</div>
+            <button class="btn-launch" id="btnRestart">重置波段重來</button>
+        </div>
+
+    </div>
+
+    <script>
+        /*************************************************************
+         * 1. 核心網頁動態幾何背景 (Canvas 動態修復與加強交錯感)
+         *************************************************************/
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let lines = [];
+        const maxLines = 45; // 線條密度
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 初始線條生成結構
+        function initLines() {
+            lines = [];
+            for (let i = 0; i < maxLines; i++) {
+                lines.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    length: Math.random() * 250 + 150,
+                    angle: Math.random() * Math.PI * 2,
+                    speed: Math.random() * 0.6 + 0.2,
+                    rotSpeed: (Math.random() - 0.5) * 0.015,
+                    colorWeight: Math.random()
+                });
+            }
+        }
+
+        function drawBackground() {
+            // 清理並保持微弱拖尾，渲染黑灰太空深邃感
+            ctx.fillStyle = 'rgba(13, 13, 13, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 更新並繪製交錯線條
+            for (let i = 0; i < lines.length; i++) {
+                let p = lines[i];
+                
+                // 緩慢移動位置
+                p.x += Math.cos(p.angle) * p.speed;
+                p.y += Math.sin(p.angle) * p.speed;
+                p.angle += p.rotSpeed; // 自轉形成隨機交錯動畫
+
+                // 邊界回彈或重定向
+                if (p.x < -100) p.x = canvas.width + 100;
+                if (p.x > canvas.width + 100) p.x = -100;
+                if (p.y < -100) p.y = canvas.height + 100;
+                if (p.y > canvas.height + 100) p.y = -100;
+
+                // 計算兩端點
+                let x1 = p.x - Math.cos(p.angle) * (p.length / 2);
+                let y1 = p.y - Math.sin(p.angle) * (p.length / 2);
+                let x2 = p.x + Math.cos(p.angle) * (p.length / 2);
+                let y2 = p.y + Math.sin(p.angle) * (p.length / 2);
+
+                // 設定不同深淺與偶爾穿插的異變紅黃線條
+                ctx.beginPath();
+                if (p.colorWeight > 0.95) {
+                    ctx.strokeStyle = 'rgba(255, 51, 51, 0.4)'; // 異變紅
+                    ctx.lineWidth = 1.5;
+                } else if (p.colorWeight > 0.90) {
+                    ctx.strokeStyle = 'rgba(255, 204, 0, 0.4)'; // 異變黃
+                    ctx.lineWidth = 1.5;
+                } else {
+                    let greyValue = Math.floor(35 + p.colorWeight * 40);
+                    ctx.strokeStyle = `rgba(${greyValue}, ${greyValue}, ${greyValue}, 0.5)`; // 灰黑交錯線
+                    ctx.lineWidth = 1;
+                }
+
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            // 隨機在主封面上製造趣味電磁擾動 HUD 的閃爍感
+            if(Math.random() > 0.93) {
+                const energy = (95 + Math.random() * 5).toFixed(1) + "%";
+                document.getElementById('hudEnergy').innerText = energy;
+            }
+
+            requestAnimationFrame(drawBackground);
+        }
+        initLines();
+        drawBackground();
+
+
+        /*************************************************************
+         * 2. Web Audio API 原生合成音效引擎 (進場即自動啟動降級相容)
+         *************************************************************/
+        let audioCtx = null;
+        let masterGain = null;
+        let bgmOsc1 = null, bgmOsc2 = null;
+        let bgmInterval = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                masterGain.connect(audioCtx.destination);
+                
+                startSpaceBGM();
+                document.getElementById('bgmStatusLabel').innerText = "BGM CORES ACTIVE";
+            } catch(e) {
+                console.log("Audio matrix initialization blocked or unsupported.");
+            }
+        }
+
+        // 太空環境音樂 (低頻宇宙轟鳴 + 隨機音階)
+        function startSpaceBGM() {
+            // 基礎低音
+            bgmOsc1 = audioCtx.createOscillator();
+            let bgmGain1 = audioCtx.createGain();
+            bgmOsc1.type = 'sawtooth';
+            bgmOsc1.frequency.setValueAtTime(55, audioCtx.currentTime); // A1低音
+            bgmGain1.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            
+            // 低通濾波器製造深邃感
+            let filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(200, audioCtx.currentTime);
+
+            bgmOsc1.connect(filter);
+            filter.connect(bgmGain1);
+            bgmGain1.connect(masterGain);
+            bgmOsc1.start();
+
+            // 隨機電子琶音
+            const alienScale = [110, 130.81, 146.83, 164.81, 196.00, 220, 261.63];
+            bgmInterval = setInterval(() => {
+                if(!audioCtx || audioCtx.state === 'suspended') return;
+                try {
+                    let osc = audioCtx.createOscillator();
+                    let g = audioCtx.createGain();
+                    osc.type = 'sine';
+                    let freq = alienScale[Math.floor(Math.random() * alienScale.length)];
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    
+                    g.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+                    
+                    osc.connect(g);
+                    g.connect(masterGain);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 1.3);
+                } catch(err){}
+            }, 900);
+        }
+
+        // 答對音效：清脆向上能量波
+        function playCorrectSound() {
+            if(!audioCtx) return;
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let g = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.3);
+            g.gain.setValueAtTime(0.15, now);
+            g.gain.linearRampToValueAtTime(0.001, now + 0.3);
+            osc.connect(g);
+            g.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.35);
+        }
+
+        // 答錯音效：低沉警報下墜
+        function playWrongSound() {
+            if(!audioCtx) return;
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let g = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.linearRampToValueAtTime(90, now + 0.4);
+            g.gain.setValueAtTime(0.2, now);
+            g.gain.linearRampToValueAtTime(0.001, now + 0.4);
+            osc.connect(g);
+            g.connect(masterGain);
+            osc.start();
+            osc.stop(now + 0.45);
+        }
+
+        // 火箭發射震撼聲：用白噪音與頻率劇烈爬升模擬噴射
+        function playRocketSound() {
+            if(!audioCtx) return;
+            let now = audioCtx.currentTime;
+            let duration = 2.5;
+            
+            // 建立白噪音緩衝區
+            let bufferSize = audioCtx.sampleRate * duration;
+            let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            let data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            let noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = buffer;
+            
+            // 用動態帶通濾波器模擬火箭引擎升空遠去
+            let filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(120, now);
+            filter.frequency.exponentialRampToValueAtTime(1200, now + 1.5);
+            
+            let noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.25, now);
+            noiseGain.gain.linearRampToValueAtTime(0.001, now + duration);
+            
+            noiseNode.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(masterGain);
+            
+            noiseNode.start(now);
+            noiseNode.stop(now + duration);
+        }
+
+        // 監聽全局任意交互以突破瀏覽器自動播放音訊限制
+        ['click', 'touchstart', 'keydown'].forEach(evt => {
+            window.addEventListener(evt, () => {
+                if(!audioCtx) initAudio();
+                else if(audioCtx.state === 'suspended') audioCtx.resume();
+            }, { once: true });
+        });
+
+        // 音量滑桿
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            if(!masterGain) initAudio();
+            if(masterGain) {
+                masterGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime);
+            }
+        });
+
+
+        /*************************************************************
+         * 3. 巨量題庫建構庫 (一般/進階 各 50 題，無遺漏精準封裝)
+         *************************************************************/
+        const poolEasy = [
+            { q: "sin(π - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "cos(π - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "tan(π - θ) = ?", a: ["tan θ", "-tan θ", "cot θ", "-cot θ"], c: 1 },
+            { q: "sin(π + θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(π + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "tan(π + θ) = ?", a: ["tan θ", "-tan θ", "cot θ", "-cot θ"], c: 0 },
+            { q: "sin(-θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(-θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 0 },
+            { q: "tan(-θ) = ?", a: ["tan θ", "-tan θ", "cot θ", "-cot θ"], c: 1 },
+            { q: "sin(2π - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(2π - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 0 },
+            { q: "tan(2π - θ) = ?", a: ["tan θ", "-tan θ", "cot θ", "-cot θ"], c: 1 },
+            { q: "sin(180° - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "cos(180° - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "tan(180° - θ) = ?", a: ["tan θ", "-tan θ", "cot θ", "-cot θ"], c: 1 },
+            { q: "sin(180° + θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(180° + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "tan(180° + θ) = ?", a: ["tan θ", "-tan θ", "cot θ", "-cot θ"], c: 0 },
+            { q: "sin(360° - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(360° - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 0 },
+            { q: "sin(360° + θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "cos(360° + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 0 },
+            { q: "sin(π/2 - θ) = ?", a: ["sin θ", "cos θ", "-sin θ", "-cos θ"], c: 1 },
+            { q: "cos(π/2 - θ) = ?", a: ["sin θ", "cos θ", "-sin θ", "-cos θ"], c: 0 },
+            { q: "tan(π/2 - θ) = ?", a: ["tan θ", "cot θ", "-tan θ", "-cot θ"], c: 1 },
+            { q: "sin(90° - θ) = ?", a: ["sin θ", "cos θ", "-sin θ", "-cos θ"], c: 1 },
+            { q: "cos(90° - θ) = ?", a: ["sin θ", "cos θ", "-sin θ", "-cos θ"], c: 0 },
+            { q: "sin(90° + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 0 },
+            { q: "cos(90° + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 3 },
+            { q: "tan(90° + θ) = ?", a: ["cot θ", "-cot θ", "tan θ", "-tan θ"], c: 1 },
+            { q: "sin(3π/2 - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "cos(3π/2 - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "sin(3π/2 + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "cos(3π/2 + θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "sin(270° - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "cos(270° - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "sin(270° + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "cos(270° + θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "sin(720° - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(720° + θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 0 },
+            { q: "求 sin(120°) 之值", a: ["1/2", "√3/2", "-1/2", "-√3/2"], c: 1 },
+            { q: "求 cos(135°) 之值", a: ["√2/2", "-√2/2", "1/2", "-1/2"], c: 1 },
+            { q: "求 tan(150°) 之值", a: ["√3", "-√3", "1/√3", "-1//√3"], c: 3 },
+            { q: "求 sin(210°) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 1 },
+            { q: "求 cos(240°) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 1 },
+            { q: "求 tan(225°) 之值", a: ["1", "-1", "√3", "-√3"], c: 0 },
+            { q: "求 sin(315°) 之值", a: ["√2/2", "-√2/2", "1/2", "-1/2"], c: 1 },
+            { q: "求 cos(300°) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 0 },
+            { q: "求 tan(330°) 之值", a: ["1/√3", "-1/√3", "√3", "-√3"], c: 1 },
+            { q: "求 sin(-45°) 之值", a: ["√2/2", "-√2/2", "1/2", "-1/2"], c: 1 }
+        ];
+
+        const poolHard = [
+            { q: "sin(θ - π) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(θ - π) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "sin(θ - π/2) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "cos(θ - 3π/2) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "sin(5π + θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(7π - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "sin(-θ - 180°) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "cos(90° - θ) + sin(180° + θ) = ?", a: ["2 sin θ", "0", "2 cos θ", "-2 sin θ"], c: 1 },
+            { q: "sin²(π/2 + θ) + sin²(π + θ) = ?", a: ["1", "0", "cos²θ - sin²θ", "2"], c: 0 },
+            { q: "cos²(90° - θ) + cos²(-θ) = ?", a: ["0", "1", "2 cos²θ", "-1"], c: 1 },
+            { q: "求 sin(405°) 之值", a: ["1/2", "√2/2", "-√2/2", "√3/2"], c: 1 },
+            { q: "求 cos(-120°) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 1 },
+            { q: "求 tan(-135°) 之值", a: ["1", "-1", "√3", "-√3"], c: 0 },
+            { q: "求 sin(930°) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 1 },
+            { q: "求 cos(1020°) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 0 },
+            { q: "若 sin(θ) = 3/5，且 θ 為第二象限角，求 cos(π+θ)", a: ["4/5", "-4/5", "3/5", "-3/5"], c: 0 },
+            { q: "若 cos(θ) = -12/13，且 π < θ < 3π/2，求 sin(π/2 - θ)", a: ["12/13", "-12/13", "5/13", "-5/13"], c: 1 },
+            { q: "sin(5a)cos(4a) - cos(5a)sin(4a) = ?", a: ["sin(9a)", "sin(a)", "cos(9a)", "cos(a)"], c: 1 },
+            { q: "tan(π + θ) · tan(3π/2 - θ) = ?", a: ["1", "-1", "tan²θ", "cot²θ"], c: 0 },
+            { q: "sin(-θ) · cos(π/2 + θ) = ?", a: ["sin²θ", "-sin²θ", "cos²θ", "1"], c: 0 },
+            { q: "求 sin(11π/6) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 1 },
+            { q: "求 cos(-7π/4) 之值", a: ["√2/2", "-√2/2", "1/2", "-1/2"], c: 0 },
+            { q: "求 tan(4π/3) 之值", a: ["√3", "-√3", "1/√3", "-1/√3"], c: 0 },
+            { q: "cos(540° - θ) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 1 },
+            { q: "sin(θ - 720°) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "求 sin(13π/3) 之值", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 2 },
+            { q: "求 cos(25π/6) 之值", a: ["1/2", "√3/2", "-1/2", "-√3/2"], c: 1 },
+            { q: "若 tan θ = 2，求 tan(π - θ) + tan(-θ)", a: ["4", "-4", "0", "2"], c: 1 },
+            { q: "sin(90°+θ) / cos(-θ) = ?", a: ["1", "-1", "tan θ", "-tan θ"], c: 0 },
+            { q: "cos(270°+θ) / sin(180°-θ) = ?", a: ["1", "-1", "cot θ", "-cot θ"], c: 0 },
+            { q: "化簡 sin(-θ)cos(90°+θ) - cos(-θ)sin(90°+θ)", a: ["1", "-1", "sin²θ-cos²θ", "cos²θ-sin²θ"], c: 1 },
+            { q: "求 sin(2026°) 落在第幾象限？", a: ["第一象限", "第二象限", "第三象限", "第四象限"], c: 2 },
+            { q: "求 cos(-2026°) 落在第幾象限的餘弦符號？", a: ["正 (+)", "負 (-)"], c: 1 },
+            { q: "求 tan(840°) 之值", a: ["√3", "-√3", "1/√3", "-1/√3"], c: 1 },
+            { q: "求 sin(-315°) 之值", a: ["√2/2", "-√2/2", "1/2", "-1/2"], c: 0 },
+            { q: "若 sin(π+θ) = 1/3，求 sin(3π-θ)", a: ["1/3", "-1/3", "2/3", "-2/3"], c: 0 },
+            { q: "若 cos(90°+θ) = 1/2，求 sin(-θ)", a: ["1/2", "-1/2", "√3/2", "-√3/2"], c: 0 },
+            { q: "sin(5π/2 + θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 2 },
+            { q: "cos(5π/2 - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 },
+            { q: "求 sin(150°) + cos(240°) 之值", a: ["1", "0", "-1", "√3"], c: 1 },
+            { q: "求 cos(315°) - sin(225°) 之值", a: ["0", "√2", "-√2", "1"], c: 1 },
+            { q: "若 sin θ + cos θ = 0, 且 θ 處於第四象限，求 tan(π+θ)", a: ["1", "-1", "0", "不存在"], c: 1 },
+            { q: "sin(10π - θ) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 1 },
+            { q: "cos(-θ - 360°) = ?", a: ["cos θ", "-cos θ", "sin θ", "-sin θ"], c: 0 },
+            { q: "求 tan(1110°) 之值", a: ["√3", "-√3", "1/√3", "-1/√3"], c: 2 },
+            { q: "sin(θ - π/2) · cos(θ - π) = ?", a: ["sin θ cos θ", "-sin θ cos θ", "cos²θ", "sin²θ"], d: 0 },
+            { q: "求 cos(15π) 之值", a: ["1", "-1", "0", "不存在"], c: 1 },
+            { q: "求 sin(-7π/2) 之值", a: ["1", "-1", "0", "1/2"], c: 0 },
+            { q: "若 tan(-θ) = 3/4，求 tan(π+θ)", a: ["3/4", "-3/4", "4/3", "-4/3"], c: 1 },
+            { q: "cos(θ - 5π/2) = ?", a: ["sin θ", "-sin θ", "cos θ", "-cos θ"], c: 0 }
+        ];
+
+
+        /*************************************************************
+         * 4. 遊戲核心邏輯控制與多階評語系統
+         *************************************************************/
+        let currentDifficulty = "easy";
+        let gameQuestions = [];
+        let currentQuestionIdx = 0;
+        let score = 0;
+        let comboStreak = 0;
+
+        // 難易度切換
+        const diffBtns = document.querySelectorAll('.diff-btn');
+        diffBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                diffBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                currentDifficulty = btn.getAttribute('data-diff');
+            });
+        });
+
+        // 開始按鈕
+        document.getElementById('btnStartGame').addEventListener('click', () => {
+            initAudio();
+            startGame();
+        });
+
+        // 重來按鈕
+        document.getElementById('btnRestart').addEventListener('click', () => {
+            switchPanel('panelCover');
+            // 還原奢華面板樣式
+            document.getElementById('panelResult').classList.remove('perfect-luxury');
+            document.getElementById('perfectHeader').innerHTML = "";
+        });
+
+        function switchPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active');
+        }
+
+        // 洗牌演算法抽取 5 題
+        function getRandomSubset(arr, size) {
+            let shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, size);
+        }
+
+        function startGame() {
+            let pool = currentDifficulty === "easy" ? poolEasy : poolHard;
+            gameQuestions = getRandomSubset(pool, 5);
+            currentQuestionIdx = 0;
+            score = 0;
+            comboStreak = 0;
+
+            document.getElementById('textCurrentScore').innerText = score;
+            document.getElementById('textStreak').style.visibility = 'hidden';
+
+            renderQuestion();
+            switchPanel('panelQuiz');
+        }
+
+        function renderQuestion() {
+            if (currentQuestionIdx >= gameQuestions.length) {
+                endGame();
+                return;
+            }
+
+            // 更新 HUD 進度
+            document.getElementById('textProgress').innerText = `${currentQuestionIdx + 1} / 5`;
+            
+            let qData = gameQuestions[currentQuestionIdx];
+            document.getElementById('textQuestion').innerText = qData.q;
+
+            // 渲染選項按鈕
+            const optBtns = document.querySelectorAll('.option-btn');
+            optBtns.forEach((btn, i) => {
+                btn.innerText = qData.a[i];
+                btn.className = "option-btn"; // 清除狀態樣式
+                btn.disabled = false;
+                
+                // 移除舊事件重新綁定防止記憶體疊加
+                btn.onclick = () => handleAnswerSelect(i);
+            });
+        }
+
+        function handleAnswerSelect(selectedIndex) {
+            let qData = gameQuestions[currentQuestionIdx];
+            const optBtns = document.querySelectorAll('.option-btn');
+            
+            // 鎖定所有按鈕避免重複點擊
+            optBtns.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === qData.c) {
+                // 答對
+                playCorrectSound();
+                optBtns[selectedIndex].classList.add('correct');
+                score += 20;
+                comboStreak++;
+                document.getElementById('textCurrentScore').innerText = score;
+
+                // 顯示/更新連擊狀態
+                if (comboStreak >= 1) {
+                    let streakEl = document.getElementById('textStreak');
+                    streakEl.innerText = `連擊 COMBO x${comboStreak}`;
+                    streakEl.style.visibility = 'visible';
+                }
+
+                // 🚀 每連續答對 2 題（如 2 連擊、4 連擊）就觸發火箭劇場特效
+                if (comboStreak > 0 && comboStreak % 2 === 0) {
+                    triggerRocketLaunch();
+            }
+
+            } else {
+                // 答錯
+                playWrongSound();
+                optBtns[selectedIndex].classList.add('wrong');
+                optBtns[qData.c].classList.add('correct'); // 顯示正確答案
+                comboStreak = 0; // 連擊中斷
+                document.getElementById('textStreak').style.visibility = 'hidden';
+            }
+
+            // 延遲下一題，留時間看反饋
+            setTimeout(() => {
+                currentQuestionIdx++;
+                renderQuestion();
+            }, 1200);
+        }
+
+        // 🚀 火箭發射核心邏輯（完美修復動畫不動問題）
+        function triggerRocketLaunch() {
+            playRocketSound();
+            const theater = document.getElementById('rocketTheater');
+            const rPod = document.getElementById('rocketPod');
+            
+            theater.style.display = 'block';
+            rPod.classList.remove('rocket-active');
+            
+            // 強制重繪觸發動畫重新執行
+            void rPod.offsetWidth; 
+            
+            rPod.classList.add('rocket-active');
+
+            // 動畫結束後隱藏劇場
+            setTimeout(() => {
+                theater.style.display = 'none';
+                rPod.classList.remove('rocket-active');
+            }, 2500); // 對應 CSS 2.5s 動畫
+        }
+
+        // 結束評定與多階多變量評語
+        function endGame() {
+            document.getElementById('textFinalScore').innerText = score;
+            let slogan = "";
+            let resultPanel = document.getElementById('panelResult');
+
+            if (score === 100) {
+                // 🌟 超級豪華 100 分面板加持
+                resultPanel.classList.add('perfect-luxury');
+                document.getElementById('perfectHeader').innerHTML = `<div class="perfect-title-addon">👑 【 超維度支配者 】 👑</div>`;
+                slogan = "高維波形已完美共振重組！你就是三角函數公式的終極毀滅者，全宇宙星海皆為你的智慧降落超能極光，星系秩序已被你完全支配！";
+            } else if (score === 80) {
+                slogan = "【星際高階領航員】換角波形契合度極高！你已經能完美預判外星公式的坍塌軌跡，只差最後一步就能躍升主宰之位！";
+            } else if (score === 60) {
+                slogan = "【異星量子觀測員】通過及格基準線。外星換角公式對你造成了一定干擾，但防衛矩陣依舊完好，建議再度校準極性。";
+            } else if (score === 40) {
+                slogan = "【遺落星海的漂流者】公式矩陣解碼失敗。防護罩能量正在急遽流失，你的象限判斷遭受外星力場嚴重扭曲，快重置試煉！";
+            } else if (score === 20) {
+                slogan = "【黑洞邊緣的受骸者】危險！你的波段運算邏輯近乎被外星未知奇點吞噬，請立刻重讀正負號換角法則以逃離黑洞！";
+            } else {
+                slogan = "【幽浮反應爐大爆炸】0% 的悲劇！你發射的信號完全被外星人攔截並嘲笑了，三角函數基礎防線全面潰散，請立即歸零重訓！";
+            }
+
+            document.getElementById('textSlogan').innerText = slogan;
+            switchPanel('panelResult');
+        }
+    </script>
+</body>
+</html>
