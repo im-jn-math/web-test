@@ -1,0 +1,1101 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地球保衛戰：乘法公式拆彈任務</title>
+    <style>
+        :root {
+            --neon-green: #39ff14;
+            --neon-red: #ff3131;
+            --neon-blue: #00e5ff;
+            --space-bg: #0a0a16;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--space-bg);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            animation: bgShift 20s linear infinite;
+        }
+
+        @keyframes bgShift {
+            0% { background-position: 0 0, 40px 60px, 130px 270px; }
+            100% { background-position: 550px 550px, 390px 410px, 380px 520px; }
+        }
+
+        /* 警告背景交錯變化 */
+        .warning-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+            mix-blend-mode: overlay;
+        }
+
+        body.danger .warning-overlay {
+            animation: redAlert 1.5s infinite alternate;
+        }
+
+        @keyframes redAlert {
+            0% { opacity: 0.1; background-color: rgba(255, 0, 0, 0.2); }
+            100% { opacity: 0.4; background-color: rgba(255, 0, 0, 0.5); }
+        }
+
+        /* 音訊控制列 */
+        .audio-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--neon-blue);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .audio-controls input[type="range"] {
+            accent-color: var(--neon-blue);
+            cursor: pointer;
+        }
+
+        /* 主容器 */
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background: rgba(10, 15, 30, 0.85);
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* 標題與文字 */
+        h1 {
+            font-size: 36px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #b0c4de;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        /* 按鈕風格 */
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .btn-mode {
+            padding: 12px 30px;
+            font-size: 18px;
+            background: transparent;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-mode.selected[data-mode="normal"] {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.6);
+            color: var(--neon-green);
+        }
+
+        .btn-mode.selected[data-mode="hard"] {
+            border-color: var(--neon-red);
+            box-shadow: 0 0 15px rgba(255, 49, 49, 0.6);
+            color: var(--neon-red);
+        }
+
+        .btn-start {
+            padding: 15px 50px;
+            font-size: 22px;
+            background: linear-gradient(45deg, #0072ff, #00dfa2);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 223, 162, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 223, 162, 0.6);
+        }
+
+        /* 遊戲畫面 */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(0, 229, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .question-box {
+            font-size: 28px;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--neon-blue);
+            text-align: left;
+            word-break: break-all;
+        }
+
+        /* 炸彈與剪線區域 */
+        .bomb-area {
+            position: relative;
+            height: 180px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bomb-core {
+            width: 100px;
+            height: 100px;
+            background: #222;
+            border: 4px solid #444;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--neon-red);
+            text-shadow: 0 0 5px var(--neon-red);
+            box-shadow: inset 0 0 10px #000;
+            z-index: 2;
+            position: relative;
+        }
+
+        /* 選項引線風格 */
+        .wires-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            top: 0;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        .wire-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            width: 22%;
+            transition: transform 0.2s;
+        }
+
+        .wire-option:hover {
+            transform: translateY(-5px);
+        }
+
+        .wire-line {
+            width: 8px;
+            height: 90px;
+            background-color: #aaa;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+
+        /* 四種不同顏色的引線 */
+        .wire-option[data-index="0"] .wire-line { background-color: #ff3131; box-shadow: 0 0 10px rgba(255,49,49,0.5); }
+        .wire-option[data-index="1"] .wire-line { background-color: #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.5); }
+        .wire-option[data-index="2"] .wire-line { background-color: #ffea00; box-shadow: 0 0 10px rgba(255,234,0,0.5); }
+        .wire-option[data-index="3"] .wire-line { background-color: #9d00ff; box-shadow: 0 0 10px rgba(157,0,255,0.5); }
+
+        /* 被剪斷的狀態 */
+        .wire-option.cut .wire-line {
+            height: 0px;
+            margin-bottom: 90px;
+            opacity: 0.3;
+        }
+
+        .wire-text {
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 5px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            width: 100%;
+            font-size: 15px;
+            word-wrap: break-word;
+            text-align: center;
+        }
+
+        /* 結算畫面 */
+        .score-display {
+            font-size: 64px;
+            font-weight: bold;
+            color: var(--neon-blue);
+            margin: 20px 0;
+            text-shadow: 0 0 15px rgba(0, 229, 255, 0.8);
+        }
+
+        .slogan {
+            font-size: 24px;
+            margin-bottom: 40px;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        /* 100分豪華特效 */
+        .perfect-score {
+            animation: rainbow glow 2s linear infinite alternate;
+            background: linear-gradient(90deg, #ff007f, #7f00ff, #00f0ff, #ff007f);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 32px;
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        /* 動態爆炸/剪除視覺反饋 */
+        .feedback-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 50px;
+            font-weight: bold;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            border-radius: 16px;
+        }
+
+        .feedback-overlay.success {
+            background: rgba(0, 255, 0, 0.2);
+            color: var(--neon-green);
+            opacity: 1;
+        }
+
+        .feedback-overlay.fail {
+            background: rgba(255, 0, 0, 0.4);
+            color: var(--neon-red);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="danger">
+
+    <div class="warning-overlay"></div>
+
+    <!-- 音量主控 -->
+    <div class="audio-controls">
+        <span>音量</span>
+        <input type="range" id="bgmVolume" min="0" max="1" step="0.1" value="0.5">
+    </div>
+
+    <div class="container">
+        <!-- 反饋層 -->
+        <div id="feedback" class="feedback-overlay"></div>
+
+        <!-- 封面畫面 -->
+        <div id="coverScreen" class="screen active">
+            <h1>外星來襲：乘法公式拆彈任務</h1>
+            <p class="subtitle">外星人已在地球防衛總部部署了量子化學炸彈！<br>唯一解除的方法就是剪斷符合正確「乘法公式」的引線。指揮官，拯救世界的任務交給你了！</p>
+            
+            <div style="margin-bottom: 15px; font-weight: bold; color: var(--neon-blue);">請選擇任務難易度：</div>
+            <div class="btn-group">
+                <button class="btn-mode selected" data-mode="normal">一般任務 (基礎公式)</button>
+                <button class="btn-mode" data-mode="hard">進階任務 (變化與三項式)</button>
+            </div>
+            
+            <button class="btn-start" id="startBtn">開始拆彈遊戲</button>
+        </div>
+
+        <!-- 遊戲主畫面 -->
+        <div id="gameScreen" class="screen">
+            <div class="hud">
+                <div>模式: <span id="currentModeText" style="font-weight:bold;">一般</span></div>
+                <div>進度: <span id="progressText" style="color:var(--neon-blue);">1 / 5</span></div>
+                <div>已拆除: <span id="scoreText" style="color:var(--neon-green);">0</span></div>
+            </div>
+
+            <div class="question-box">
+                <span style="color: #ffea00; font-weight: bold;">[題目] 展開或化簡：</span>
+                <div id="questionText" style="margin-top: 10px;">(a + b)² = ?</div>
+            </div>
+
+            <!-- 核心炸彈引線互動區 -->
+            <div class="bomb-area">
+                <div class="bomb-core" id="bombTimer">BOMB</div>
+                <div class="wires-container" id="wiresContainer">
+                    <!-- 由JS動態生成 4 條導線選項 -->
+                </div>
+            </div>
+            <p style="color: #aaa; font-size: 14px;">⚡ 點擊下方色彩引線（或公式選項）進行剪線拆彈！</p>
+        </div>
+
+        <!-- 結算畫面 -->
+        <div id="resultScreen" class="screen">
+            <h1>任務結束</h1>
+            <div class="score-display"><span id="finalScore">0</span> 分</div>
+            <div id="sloganText" class="slogan"></div>
+            <button class="btn-start" onclick="restartGame()">再次挑戰</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 題庫定義 (各50題) ---
+        const normalQuestionPool = [
+            { q: "(a + b)²", a: "a² + 2ab + b²", o: ["a² + ab + b²", "a² + 2ab - b²", "a² - 2ab + b²"] },
+            { q: "(a - b)²", a: "a² - 2ab + b²", o: ["a² - ab + b²", "a² - 2ab - b²", "a² + 2ab + b²"] },
+            { q: "(a + b)(a - b)", a: "a² - b²", o: ["a² + b²", "(a - b)²", "a² - 2ab + b²"] },
+            { q: "a² - b²", a: "(a + b)(a - b)", o: ["(a - b)²", "(a + b)²", "a² - 2ab + b²"] },
+            { q: "(x + 3)²", a: "x² + 6x + 9", o: ["x² + 3x + 9", "x² + 6x + 6", "x² + 9"] },
+            { q: "(x - 4)²", a: "x² - 8x + 16", o: ["x² - 4x + 16", "x² - 8x - 16", "x² + 16"] },
+            { q: "(x + 5)(x - 5)", a: "x² - 25", o: ["x² - 10", "x² + 25", "x² - 5x + 25"] },
+            { q: "(2x + 1)²", a: "4x² + 4x + 1", o: ["2x² + 4x + 1", "4x² + 2x + 1", "4x² + 1"] },
+            { q: "(3y - 2)²", a: "9y² - 12y + 4", o: ["9y² - 6y + 4", "3y² - 12y + 4", "9y² - 12y - 4"] },
+            { q: "(2a + 3b)(2a - 3b)", a: "4a² - 9b²", o: ["2a² - 3b²", "4a² + 9b²", "4a² - 12ab + 9b²"] },
+            { q: "(m + n)²", a: "m² + 2mn + n²", o: ["m² + mn + n²", "m² - 2mn + n²", "m² + 2mn - n²"] },
+            { q: "(p - q)²", a: "p² - 2pq + q²", o: ["p² - pq + q²", "p² + 2pq + q²", "p² - 2pq - q²"] },
+            { q: "101² (利用公式)", a: "10000 + 200 + 1", o: ["10000 + 1", "10000 + 100 + 1", "10000 + 400 + 4"] },
+            { q: "99² (利用公式)", a: "10000 - 200 + 1", o: ["10000 - 1", "10000 - 100 + 1", "10000 - 200 - 1"] },
+            { q: "85² - 15²", a: "(85 + 15)(85 - 15)", o: ["(85 - 15)²", "85² + 2(85)(15) + 15²", "70 * 70"] },
+            { q: "(x + 2)(x + 3)", a: "x² + 5x + 6", o: ["x² + 6x + 5", "x² + 5x + 5", "x² + 6"] },
+            { q: "(x - 1)(x - 4)", a: "x² - 5x + 4", o: ["x² - 5x - 4", "x² + 5x + 4", "x² - 4x + 4"] },
+            { q: "(x + 5)(x - 2)", a: "x² + 3x - 10", o: ["x² - 3x - 10", "x² + 3x + 10", "x² - 10"] },
+            { q: "(x - 7)(x + 3)", a: "x² - 4x - 21", o: ["x² + 4x - 21", "x² - 4x + 21", "x² - 21"] },
+            { q: "(2x + 3)²", a: "4x² + 12x + 9", o: ["4x² + 6x + 9", "2x² + 12x + 9", "4x² + 9"] },
+            { q: "(5x - 1)²", a: "25x² - 10x + 1", o: ["25x² - 5x + 1", "5x² - 10x + 1", "25x² - 10x - 1"] },
+            { q: "(4a - 5b)²", a: "16a² - 40ab + 25b²", o: ["16a² - 20ab + 25b²", "16a² + 40ab + 25b²", "4a² - 40ab + 5b²"] },
+            { q: "50.5 * 49.5", a: "2500 - 0.25", o: ["2500 - 0.5", "2500 - 25", "2500 - 0.05"] },
+            { q: "(3x + 4y)²", a: "9x² + 24xy + 16y²", o: ["9x² + 12xy + 16y²", "3x² + 24xy + 4y²", "9x² + 24xy - 16y²"] },
+            { q: "(7x - 2)(7x + 2)", a: "49x² - 4", o: ["49x² + 4", "7x² - 4", "49x² - 28x + 4"] },
+            { q: "203 * 197", a: "40000 - 9", o: ["40000 - 3", "40000 - 6", "40000 + 9"] },
+            { q: "(a - 3b)²", a: "a² - 6ab + 9b²", o: ["a² - 3ab + 9b²", "a² - 6ab - 9b²", "a² + 6ab + 9b²"] },
+            { q: "a² + 2ab + b²", a: "(a + b)¹", o: ["(a - b)²", "(a + b)(a - b)", "a² - b²"], fixA: "(a + b)²" }, //修正一下
+            { q: "(x + y)² - (x - y)²", a: "4xy", o: ["2x² + 2y²", "0", "2xy"] },
+            { q: "(x + y)² + (x - y)²", a: "2x² + 2y²", o: ["4xy", "2x² - 2y²", "0"] },
+            { q: "999²", a: "1000000 - 2000 + 1", o: ["1000000 - 1000 + 1", "1000000 - 2000 - 1", "1000000 - 1"] },
+            { q: "1002 * 998", a: "1000000 - 4", o: ["1000000 - 2", "1000000 - 8", "1000000 + 4"] },
+            { q: "(3a + 5)²", a: "9a² + 30a + 25", o: ["9a² + 15a + 25", "3a² + 30a + 25", "9a² + 25"] },
+            { q: "(6 - x)²", a: "36 - 12x + x²", o: ["36 - 6x + x²", "36 - 12x - x²", "36 + x²"] },
+            { q: "(2x - 5y)(2x + 5y)", a: "4x² - 25y²", o: ["4x² + 25y²", "2x² - 5y²", "4x² - 20xy + 25y²"] },
+            { q: "(x + 0.1)²", a: "x² + 0.2x + 0.01", o: ["x² + 0.1x + 0.01", "x² + 0.2x + 0.1", "x² + 0.01"] },
+            { q: "(x - 1/2)²", a: "x² - x + 1/4", o: ["x² - x + 1/2", "x² - 1/2x + 1/4", "x² + 1/4"] },
+            { q: "(x + 1/3)(x - 1/3)", a: "x² - 1/9", o: ["x² - 1/3", "x² + 1/9", "x² - 2/3x - 1/9"] },
+            { q: "(-a + b)²", a: "a² - 2ab + b²", o: ["a² + 2ab + b²", "-a² + 2ab + b²", "a² - 2ab - b²"] },
+            { q: "(-a - b)²", a: "a² + 2ab + b²", o: ["a² - 2ab + b²", "-a² - 2ab + b²", "-a² + b²"] },
+            { q: "(20 + 3)²", a: "400 + 120 + 9", o: ["400 + 60 + 9", "400 + 9", "400 + 120 + 6"] },
+            { q: "30.1²", a: "900 + 6 + 0.01", o: ["900 + 3 + 0.01", "900 + 6 + 0.1", "900 + 0.01"] },
+            { q: "19.9²", a: "400 - 4 + 0.01", o: ["400 - 2 + 0.01", "400 - 4 - 0.01", "400 + 0.01"] },
+            { q: "405 * 395", a: "160000 - 25", o: ["160000 - 5", "160000 + 25", "160000 - 20"] },
+            { q: "(x + 8)²", a: "x² + 16x + 64", o: ["x² + 8x + 64", "x² + 16x + 16", "x² + 64"] },
+            { q: "(x - 9)²", a: "x² - 18x + 81", o: ["x² - 9x + 81", "x² - 18x - 81", "x² + 81"] },
+            { q: "(10x + 3)(10x - 3)", a: "100x² - 9", o: ["100x² + 9", "10x² - 9", "100x² - 60x + 9"] },
+            { q: "(x - y)(y - x) 化簡", a: "-x² + 2xy - y²", o: ["x² - 2xy + y²", "x² - y²", "y² - x²"] },
+            { q: "(a + 2b)²", a: "a² + 4ab + 4b²", o: ["a² + 2ab + 4b²", "a² + 4ab + 2b²", "a² + 4b²"] },
+            { q: "(3x - 1)²", a: "9x² - 6x + 1", o: ["9x² - 3x + 1", "3x² - 6x + 1", "9x² - 6x - 1"] }
+        ];
+        // 修正第28題的正確答案顯示錯誤Bug
+        normalQuestionPool[27].a = "(a + b)²";
+
+        const hardQuestionPool = [
+            { q: "(a + b + c)²", a: "a²+b²+c²+2ab+2bc+2ca", o: ["a²+b²+c²+ab+bc+ca", "a²+b²+c²-2ab-2bc-2ca", "a²+b²+c²+2ab-2bc+2ca"] },
+            { q: "(a + b - c)²", a: "a²+b²+c²+2ab-2bc-2ca", o: ["a²+b²+c²+2ab+2bc-2ca", "a²+b²-c²+2ab-2bc-2ca", "a²+b²+c²-2ab-2bc-2ca"] },
+            { q: "(a - b - c)²", a: "a²+b²+c²-2ab+2bc-2ca", o: ["a²+b²+c²-2ab-2bc-2ca", "a²-b²-c²-2ab+2bc-2ca", "a²+b²+c²+2ab+2bc+2ca"] },
+            { q: "若 a+b=5, ab=6，求 a²+b²", a: "13", o: ["19", "25", "37"] },
+            { q: "若 a-b=4, ab=5，求 a²+b²", a: "26", o: ["16", "6", "21"] },
+            { q: "若 a²+b²=25, ab=12，求 (a+b)²", a: "49", o: ["37", "13", "25"] },
+            { q: "若 a²+b²=30, ab=7，求 (a-b)²", a: "16", o: ["23", "44", "9"] },
+            { q: "(x + 1/x)² 展開", a: "x² + 2 + 1/x²", o: ["x² + 1/x²", "x² + 2x + 1/x²", "x² + 4 + 1/x²"] },
+            { q: "(x - 1/x)² 展開", a: "x² - 2 + 1/x²", o: ["x² - 1/x²", "x² - 2x + 1/x²", "x² - 4 + 1/x²"] },
+            { q: "若 x + 1/x = 4，求 x² + 1/x²", a: "14", o: ["16", "18", "12"] },
+            { q: "若 x - 1/x = 3，求 x² + 1/x²", a: "11", o: ["9", "7", "13"] },
+            { q: "(a + b)³ (立方公式)", a: "a³ + 3a²b + 3ab² + b³", o: ["a³ + b³", "a³ + 3ab + b³", "a³ + 2a²b + 2ab² + b³"] },
+            { q: "(a - b)³ (立方公式)", a: "a³ - 3a²b + 3ab² - b³", o: ["a³ - b³", "a³ - 3a²b - 3ab² + b³", "a³ + 3a²b - 3ab² + b³"] },
+            { q: "a³ + b³ (立方和因式分解)", a: "(a+b)(a²-ab+b²)", o: ["(a+b)³", "(a+b)(a²+ab+b²)", "h(a-b)(a²+ab+b²)"] },
+            { q: "a³ - b³ (立方差因式分解)", a: "(a-b)(a²+ab+b²)", o: ["(a-b)³", "(a-b)(a²-ab+b²)", "(a+b)(a²-ab+b²)"] },
+            { q: "化簡 (x+1)(x-1)(x²+1)", a: "x⁴ - 1", o: ["x⁴ + 1", "x² - 1", "x⁴ - 2x² + 1"] },
+            { q: "化簡 (x-2)(x+2)(x²+4)", a: "x⁴ - 16", o: ["x⁴ + 16", "x⁴ - 8", "x⁴ - 4x² + 16"] },
+            { q: "計算 123² - 2*123*23 + 23²", a: "10000", o: ["14600", "21300", "100"] },
+            { q: "計算 78² + 2*78*22 + 22²", a: "10000", o: ["100", "5600", "12000"] },
+            { q: "若 (3x+4)² = 9x² + kx + 16，則 k = ?", a: "24", o: ["12", "16", "48"] },
+            { q: "若 (5x-3)² = 25x² - kx + 9，則 k = ?", a: "30", o: ["15", "9", "-30"] },
+            { q: "化簡 (a-b+c)(a+b-c)", a: "a² - (b-c)²", o: ["a² - b² - c²", "a² - b² + c²", "(a-b)² - c²"] },
+            { q: "化簡 (x²+x+1)(x²-x+1)", a: "x⁴ + x² + 1", o: ["x⁴ - x² + 1", "x⁴ + 1", "x⁴ + 2x² + 1"] },
+            { q: "求 2005² - 2004² 的值", a: "4009", o: ["1", "4000", "4008"] },
+            { q: "若 a-b=2, a²+b²=10，求 ab", a: "3", o: ["6", "4", "2"] },
+            { q: "若 a+b=6, a²+b²=20，求 ab", a: "8", o: ["16", "4", "12"] },
+            { q: "計算 9999² - 1", a: "99980000", o: ["99990000", "99980001", "99960000"] },
+            { q: "化簡 (2x + 3y - 4z)² 中 xy 項的係數", a: "12", o: ["6", "24", "-12"] },
+            { q: "化簡 (2x + 3y - 4z)² 中 xz 項的係數", a: "-16", o: ["-8", "16", "-32"] },
+            { q: "化簡 (x-1)(x+1)(x²+1)(x⁴+1)", a: "x⁸ - 1", o: ["x⁸ + 1", "x⁴ - 1", "x¹⁶ - 1"] },
+            { q: "若 x²+y²-4x+6y+13=0，求 x+y", a: "-1", o: ["5", "1", "-5"] },
+            { q: "若 x²+4x+k 是一個完全平方式，則 k=?", a: "4", o: ["2", "8", "16"] },
+            { q: "若 9x²-kx+25 是一個完全平方式，則 k (正值)=?", a: "30", o: ["15", "60", "45"] },
+            { q: "計算 (2+1)(2²+1)(2⁴+1) + 1", a: "2⁸", o: ["2⁸ - 1", "2⁴", "2¹⁶"] },
+            { q: "若 a/b + b/a = 3，求 (a/b - b/a)²", a: "5", o: ["9", "7", "1"] },
+            { q: "化簡 (a+b)² - 2(a+b)(a-b) + (a-b)²", a: "4b²", o: ["4a²", "2a² + 2b²", "0"] },
+            { q: "若 x+y=3, x²+y²=7，求 x³+y³", a: "18", o: ["27", "9", "15"] },
+            { q: "若 x-y=1, x²+y²=5，求 x³-y³", a: "7", o: ["4", "8", "11"] },
+            { q: "(x+2)³ 展開後 x 的係數為", a: "12", o: ["6", "4", "8"] },
+            { q: "(2x-1)³ 展開後 x² 的係數為", a: "-12", o: ["12", "-6", "-4"] },
+            { q: "若 x²-3x+1=0，求 x²+1/x²", a: "7", o: ["9", "11", "5"] },
+            { q: "計算 2026² - 2025*2027", a: "1", o: ["-1", "2026", "0"] },
+            { q: "計算 50² - 49² + 48² - 47²", a: "194", o: ["99", "95", "200"] },
+            { q: "化簡 (x-y+z)² - (x+y-z)²", a: "4xz - 4xy", o: ["0", "4yz", "4xz + 4xy"] },
+            { q: "若 a-b=3, b-c=2，求 a-c", a: "5", o: ["1", "-1", "-5"] },
+            { q: "若 (x+1)(x+2)(x+3)(x+4)+1 可以寫成某多項式的平方，該多項式為", a: "x² + 5x + 5", o: ["x² + 5x + 1", "x² + 4x + 5", "x² + 6x + 5"] },
+            { q: "若 x+y+z=6, x²+y²+z²=14，求 xy+yz+ca", a: "11", o: ["22", "12", "7"] },
+            { q: "化簡 (x+2)² - 2(x+2)(x-3) + (x-3)²", a: "25", o: ["x²", "2x-1", "1"] },
+            { q: "若 4x²+kx+9 為完全平方式，k的可能值為", a: "±12", o: ["12", "±6", "±24"] },
+            { q: "已知 103³ - 3*103²*3 + 3*103*3² - 3³，其值為", a: "1000000", o: ["10000", "100000", "10000000"] }
+        ];
+
+        // --- 音效模擬系統 (Web Audio API) ---
+        // 為了確保不依賴外部檔案，進入網頁即可100%播放，這裡採用萬無一失的 Web Audio API 合成音效與背景音樂
+        const AudioEngine = {
+            ctx: null,
+            bgmNode: null,
+            bgmGain: null,
+            globalVolume: 0.5,
+
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.setupBGM();
+            },
+
+            setVolume(val) {
+                this.globalVolume = val;
+                if (this.bgmGain) {
+                    this.bgmGain.gain.setValueAtTime(val * 0.15, this.ctx.currentTime); // BGM稍微柔和
+                }
+            },
+
+            setupBGM() {
+                // 使用Oscillator合成一段帶有科幻神祕感的低沉太空背景音樂循環
+                this.bgmGain = this.ctx.createGain();
+                this.bgmGain.gain.setValueAtTime(this.globalVolume * 0.15, this.ctx.currentTime);
+                this.bgmGain.connect(this.ctx.destination);
+
+                // 模擬循環定時器播放音符
+                let noteIndex = 0;
+                const notes = [110, 130, 98, 87, 110, 146, 130, 98]; // 低音循環
+                
+                setInterval(() => {
+                    if (document.getElementById('coverScreen').classList.contains('active') || 
+                        document.getElementById('gameScreen').classList.contains('active')) {
+                        
+                        try {
+                            let osc = this.ctx.createOscillator();
+                            let filter = this.ctx.createBiquadFilter();
+                            let gain = this.ctx.createGain();
+                            
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(notes[noteIndex % notes.length], this.ctx.currentTime);
+                            
+                            filter.type = 'lowpass';
+                            filter.frequency.setValueAtTime(300, this.ctx.currentTime);
+                            
+                            gain.gain.setValueAtTime(1, this.ctx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.8);
+                            
+                            osc.connect(filter);
+                            filter.connect(gain);
+                            gain.connect(this.bgmGain);
+                            
+                            osc.start();
+                            osc.stop(this.ctx.currentTime + 1.8);
+                            noteIndex++;
+                        } catch(e) {}
+                    }
+                }, 1500);
+            },
+
+            playCutSound() {
+                // 剪線音效：清脆的金屬咔嚓與短促高頻
+                this.init();
+                let now = this.ctx.currentTime;
+                
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+                
+                gain.gain.setValueAtTime(this.globalVolume * 0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.15);
+            },
+
+            playExplosionSound() {
+                // 爆炸音效：低沉震動爆破加白噪音
+                this.init();
+                let now = this.ctx.currentTime;
+                
+                // 1. 低頻震盪器
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.linearRampToValueAtTime(40, now + 0.6);
+                
+                // 濾波器讓聲音變悶變沉
+                let filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, now);
+                
+                gain.gain.setValueAtTime(this.globalVolume * 0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.6);
+                
+                // 2. 加上噪音製造沙沙爆裂感
+                try {
+                    let bufferSize = this.ctx.sampleRate * 0.4;
+                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    let data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    let noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    
+                    let noiseFilter = this.ctx.createBiquadFilter();
+                    noiseFilter.type = 'lowpass';
+                    noiseFilter.frequency.setValueAtTime(400, now);
+                    
+                    let noiseGain = this.ctx.createGain();
+                    noiseGain.gain.setValueAtTime(this.globalVolume * 0.5, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    
+                    noise.connect(noiseFilter);
+                    noiseFilter.connect(noiseGain);
+                    noiseGain.connect(this.ctx.destination);
+                    noise.start();
+                    noise.stop(now + 0.4);
+                } catch(e){}
+            },
+
+            playWinFanfare() {
+                // 100分豪華勝利音效：大調和弦上升音
+                this.init();
+                let now = this.ctx.currentTime;
+                const freqs = [261.6, 329.6, 392.0, 523.3, 659.3, 784.0, 1046.5];
+                freqs.forEach((f, i) => {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + i * 0.08);
+                    gain.gain.setValueAtTime(this.globalVolume * 0.3, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.5);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.5);
+                });
+            }
+        };
+
+        // --- 遊戲邏輯變數 ---
+        let currentMode = 'normal'; // 'normal' or 'hard'
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswering = false;
+
+        // --- 初始化事件監聽 ---
+        document.querySelectorAll('.btn-mode').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                currentMode = this.getAttribute('data-mode');
+            });
+        });
+
+        // 監聽音量拉桿
+        document.getElementById('bgmVolume').addEventListener('input', function() {
+            AudioEngine.setVolume(parseFloat(this.value));
+        });
+
+        // 點擊網頁任何地方觸發音訊初始化 (瀏覽器安全限制)
+        document.body.addEventListener('click', () => {
+            AudioEngine.init();
+        }, { once: true });
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            AudioEngine.init();
+            startGame();
+        });
+
+        // --- 核心遊戲流程控制 ---
+        function startGame() {
+            // 切換畫面
+            document.getElementById('coverScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('resultScreen').classList.remove('active');
+
+            // 初始化數據
+            score = 0;
+            currentQuestionIndex = 0;
+            document.getElementById('currentModeText').innerText = currentMode === 'normal' ? '一般任務' : '進階任務';
+            
+            // 挑選題庫並隨機抽 5 題
+            let fullPool = currentMode === 'normal' ? normalQuestionPool : hardQuestionPool;
+            currentQuestions = getRandomQuestions(fullPool, 5);
+
+            loadQuestion();
+        }
+
+        function getRandomQuestions(pool, count) {
+            let shuffled = [...pool].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        function loadQuestion() {
+            isAnswering = false;
+            
+            // 更新進度與分數 HUD
+            document.getElementById('progressText').innerText = `${currentQuestionIndex + 1} / 5`;
+            document.getElementById('scoreText').innerText = score * 20; // 每題20分
+
+            let qData = currentQuestions[currentQuestionIndex];
+            document.getElementById('questionText').innerText = qData.q;
+
+            // 準備選項 (正確答案 + 錯誤答案)，並隨機排序
+            let options = [qData.a, ...qData.o];
+            options = options.sort(() => 0.5 - Math.random());
+
+            // 渲染引線
+            const container = document.getElementById('wiresContainer');
+            container.innerHTML = '';
+
+            options.forEach((optText, index) => {
+                const wire = document.createElement('div');
+                wire.className = 'wire-option';
+                wire.setAttribute('data-index', index);
+                
+                // 判斷是否為正確答案
+                const isCorrect = (optText === qData.a);
+                wire.onclick = () => cutWire(wire, isCorrect);
+
+                wire.innerHTML = `
+                    <div class="wire-line"></div>
+                    <div class="wire-text">${optText}</div>
+                `;
+                container.appendChild(wire);
+            });
+        }
+
+        function cutWire(wireElement, isCorrect) {
+            if (isAnswering) return; // 防止重複點擊
+            isAnswering = true;
+
+            // 給予引線被剪斷的視覺樣式
+            wireElement.classList.add('cut');
+
+            const feedback = document.getElementById('feedback');
+
+            // === 1. 自動注入動感字體與純 CSS 圖案的樣式 ===
+(function injectAdvancedAnimationStyles() {
+    if (document.getElementById('bomb-advanced-styles')) return;
+
+    // 引入 Google Fonts 的動感美式漫畫字體 'Bangers'
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://googleapis.com';
+    document.head.appendChild(link);
+
+    const style = document.createElement('style');
+    style.id = 'bomb-advanced-styles';
+    style.textContent = `
+        /* 動態文字與圖案的容器 */
+        .bomb-effect-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .bomb-effect-text {
+            font-family: 'Bangers', 'Impact', sans-serif;
+            font-size: 6rem;
+            letter-spacing: 4px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        /* ================= 成功：剪斷導線特效 ================= */
+        .text-success-pop {
+            color: #2ecc71;
+            text-shadow: 0 0 15px #2ecc71, 0 0 30px #2ecc71, 0 0 50px #000;
+            animation: textBounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+                       textFadeOut 0.4s ease-in 1.2s forwards;
+        }
+
+        /* 純 CSS 剪鉗與斷線圖案 */
+        .wire-cut-icon {
+            width: 100px;
+            height: 80px;
+            position: relative;
+            margin-bottom: 20px;
+            animation: textBounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+                       textFadeOut 0.4s ease-in 1.2s forwards;
+        }
+        /* 被剪斷的導線 */
+        .wire-cut-icon::before {
+            content: '';
+            position: absolute;
+            top: 40px; left: 0; width: 100px; height: 8px;
+            background: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+        }
+        /* 導線中間剪斷空隙 */
+        .wire-cut-icon::after {
+            content: '';
+            position: absolute;
+            top: 35px; left: 40px; width: 20px; height: 18px;
+            background: rgba(0,0,0,0); /* 穿透背景線條 */
+            border-left: 4px solid #2ecc71;
+            border-right: 4px solid #2ecc71;
+            box-sizing: border-box;
+            transform: rotate(15deg);
+        }
+
+        /* 成功解除：綠色光圈擴散效果 */
+        .success-pulse-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: transparent;
+            border: 8px solid #2ecc71;
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            animation: successPulse 0.8s ease-out forwards;
+        }
+
+        /* ================= 失敗：炸彈引爆特效 ================= */
+        .text-boom-pop {
+            color: #ff3333;
+            font-size: 8rem;
+            text-shadow: 0 0 15px #ff3333, 0 0 40px #ffcc00, 0 0 70px #000;
+            animation: textExplodeIn 0.3s ease-out forwards,
+                       textGlitchShake 0.4s linear infinite,
+                       textFadeOut 0.3s ease-in 1.2s forwards;
+        }
+
+        /* 純 CSS 圓形炸彈圖案 */
+        .bomb-mesh-icon {
+            width: 120px;
+            height: 120px;
+            background: #222;
+            border-radius: 50%;
+            position: absolute;
+            z-index: -1; /* 擋在 BOOM 字體後面作為背景襯托 */
+            box-shadow: inset -10px -10px 20px #000;
+            animation: bombSwellAndRed 0.3s ease-out forwards;
+        }
+        /* 炸彈引信 */
+        .bomb-mesh-icon::before {
+            content: '';
+            position: absolute;
+            top: -15px; left: 50%;
+            transform: translateX(-50%);
+            width: 20px; height: 15px;
+            background: #444;
+            border-radius: 3px;
+        }
+        /* 引信火花 */
+        .bomb-mesh-icon::after {
+            content: '';
+            position: absolute;
+            top: -30px; left: 60%;
+            width: 15px; height: 15px;
+            background: #ffcc00;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ff3333;
+            animation: fuseSpark 0.1s infinite alternate;
+        }
+
+        /* 失敗爆炸：全螢幕紅光閃爍 + 震動效果 */
+        .explosion-flash-animation {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 9998;
+            pointer-events: none;
+            animation: explosionFlash 0.6s ease-out forwards, screenShake 0.4s ease-in-out;
+        }
+
+        /* ================= KEYFRAMES 動畫細節 ================= */
+        @keyframes textBounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes textExplodeIn {
+            0% { transform: scale(5); opacity: 0; filter: blur(10px); }
+            100% { transform: scale(1); opacity: 1; filter: blur(0); }
+        }
+
+        @keyframes textGlitchShake {
+            0% { transform: translate(-2px, 2px) skewX(-3deg); }
+            25% { transform: translate(2px, -2px) skewX(3deg); }
+            50% { transform: translate(-1px, -1px) scaleY(1.02); }
+            75% { transform: translate(2px, 1px) scaleX(1.02); }
+            100% { transform: translate(-2px, 2px); }
+        }
+
+        @keyframes textFadeOut {
+            100% { opacity: 0; transform: scale(0.7); filter: blur(5px); }
+        }
+
+        @keyframes bombSwellAndRed {
+            0% { transform: scale(0.5); background: #222; }
+            40% { background: #ff3333; box-shadow: 0 0 30px #ff3333; }
+            100% { transform: scale(2.5); opacity: 0; background: #fff; }
+        }
+
+        @keyframes fuseSpark {
+            0% { transform: scale(0.8); background: #ffcc00; }
+            100% { transform: scale(1.3); background: #ff3333; }
+        }
+
+        @keyframes successPulse {
+            0% { width: 10px; height: 10px; opacity: 1; }
+            100% { width: 1200px; height: 1200px; opacity: 0; border-width: 1px; }
+        }
+
+        @keyframes explosionFlash {
+            0% { background: #ffffff; opacity: 1; }
+            15% { background: #ff3333; opacity: 1; }
+            50% { background: #ffcc00; opacity: 0.8; }
+            100% { background: #000000; opacity: 0; }
+        }
+
+        @keyframes screenShake {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-12px, 10px); }
+            30% { transform: translate(15px, -12px); }
+            50% { transform: translate(-15px, 7px); }
+            70% { transform: translate(10px, -10px); }
+            90% { transform: translate(-5px, 5px); }
+            100% { transform: translate(0, 0); }
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
+// === 2. 主程式邏輯區塊 ===
+if (isCorrect) {
+    // 答對邏輯：拆彈成功
+    score++;
+    AudioEngine.playCutSound();
+    feedback.className = "feedback-overlay success";
+    
+    // 觸發成功特效（背景光圈 + 純 CSS 剪線圖案 + SUCCESS 字幕）
+    triggerSuccessAnimation();
+} else {
+    // 答錯邏輯：炸彈爆炸
+    AudioEngine.playExplosionSound();
+    feedback.className = "feedback-overlay fail";
+    
+    // 觸發失敗特效（全螢幕閃爍震動 + 炸彈膨脹 + BOOM 字幕）
+    triggerExplosionAnimation();
+}
+
+// === 3. 動態產生動畫與特效圖案的函式 ===
+function triggerSuccessAnimation() {
+    // 1. 產生背景擴散光圈
+    const anim = document.createElement('div');
+    anim.className = 'success-pulse-animation';
+    document.body.appendChild(anim);
+    anim.addEventListener('animationend', () => anim.remove());
+
+    // 2. 產生裝有圖案與文字的容器
+    const container = document.createElement('div');
+    container.className = 'bomb-effect-container';
+
+    // 3. 建立純 CSS 剪線圖案並加入容器
+    const icon = document.createElement('div');
+    icon.className = 'wire-cut-icon';
+    container.appendChild(icon);
+
+    // 4. 建立 SUCCESS 字幕並加入容器
+    const textEffect = document.createElement('div');
+    textEffect.className = 'bomb-effect-text text-success-pop';
+    textEffect.innerText = 'SUCCESS';
+    container.appendChild(textEffect);
+
+    document.body.appendChild(container);
+    
+    // 監聽文字動態結束後，將整個容器移除
+    textEffect.addEventListener('animationend', () => container.remove());
+}
+
+function triggerExplosionAnimation() {
+    // 1. 產生全螢幕爆炸閃爍與震動效果
+    const flash = document.createElement('div');
+    flash.className = 'explosion-flash-animation';
+    document.body.appendChild(flash);
+    flash.addEventListener('animationend', () => flash.remove());
+
+    // 2. 產生裝有圖案與文字的容器
+    const container = document.createElement('div');
+    container.className = 'bomb-effect-container';
+
+    // 3. 建立純 CSS 炸彈本體（置於文字後方）
+    const icon = document.createElement('div');
+    icon.className = 'bomb-mesh-icon';
+    container.appendChild(icon);
+
+    // 4. 建立 BOOM 字幕
+    const textEffect = document.createElement('div');
+    textEffect.className = 'bomb-effect-text text-boom-pop';
+    textEffect.innerText = 'BOOM';
+    container.appendChild(textEffect);
+
+    document.body.appendChild(container);
+    
+    // 監聽文字動態結束後，將整個容器移除
+    textEffect.addEventListener('animationend', () => container.remove());
+}
+
+            // 延遲1.5秒進下一題，讓玩家感受音效與反饋
+            setTimeout(() => {
+                feedback.className = "feedback-overlay"; // 隱藏反饋
+                currentQuestionIndex++;
+                if (currentQuestionIndex < 5) {
+                    loadQuestion();
+                } else {
+                    showResult();
+                }
+            }, 1500);
+        }
+
+        function showResult() {
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('resultScreen').classList.add('active');
+
+            const finalScoreText = score * 20;
+            document.getElementById('finalScore').innerText = finalScoreText;
+
+            const sloganBox = document.getElementById('sloganText');
+            sloganBox.className = "slogan"; // 重設
+
+            // 不同分數給予不同標語與顏色
+            if (finalScoreText === 100) {
+                sloganBox.innerHTML = "🏆 完美拆彈！外星母艦已被全數殲滅，你是拯救地球的終極傳奇英雄！";
+                sloganBox.classList.add('perfect-score');
+                AudioEngine.playWinFanfare(); // 播放特殊勝利和弦
+            } else if (finalScoreText >= 80) {
+                sloganBox.innerText = "🚀 幹得好！成功瓦解外星主力攻勢，世界因你而安全！";
+                sloganBox.style.backgroundColor = "rgba(57, 255, 20, 0.2)";
+                sloganBox.style.color = "var(--neon-green)";
+                sloganBox.style.border = "1px solid var(--neon-green)";
+            } else if (finalScoreText >= 60) {
+                sloganBox.innerText = "📡 驚險防衛！雖然部分基地受損，但成功守住了主要核心！";
+                sloganBox.style.backgroundColor = "rgba(0, 229, 255, 0.2)";
+                sloganBox.style.color = "var(--neon-blue)";
+                sloganBox.style.border = "1px solid var(--neon-blue)";
+            } else if (finalScoreText >= 20) {
+                sloganBox.innerText = "⚠️ 警報大作！防禦網被多處突破，請長官立即回總部重新研讀乘法公式！";
+                sloganBox.style.backgroundColor = "rgba(255, 234, 0, 0.2)";
+                sloganBox.style.color = "#ffea00";
+                sloganBox.style.border = "1px solid #ffea00";
+            } else {
+                sloganBox.innerText = "💀 地球失守... 外星人已全面佔領基地。請重整旗鼓，再次醒來拯救人類！";
+                sloganBox.style.backgroundColor = "rgba(255, 49, 49, 0.2)";
+                sloganBox.style.color = "var(--neon-red)";
+                sloganBox.style.border = "1px solid var(--neon-red)";
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('resultScreen').classList.remove('active');
+            document.getElementById('coverScreen').classList.add('active');
+        }
+    </script>
+</body>
+</html>
